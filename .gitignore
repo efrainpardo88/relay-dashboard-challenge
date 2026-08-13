@@ -1,0 +1,40 @@
+# --- .NET ---
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+appsettings.Development.local.json
+*.db
+*.db-shm
+*.db-wal
+
+# --- Node / Angular ---
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-error.log*
+
+# --- Editors / OS ---
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+Desktop.ini
+*.swp
+
+# --- Secrets ---
+.env
+.env.local
+*.pfx
+
+# --- Agent tooling ---
+# .claude/ IS tracked on purpose: the brief treats committed agent-context
+# artifacts (CLAUDE.md, custom commands) as positive signal. Only the
+# machine-local settings file is excluded.
+.claude/settings.local.json
+
+# NOTE: ai-log/ is intentionally NOT ignored. It is a required deliverable.
