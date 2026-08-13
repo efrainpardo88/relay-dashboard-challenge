@@ -261,3 +261,84 @@ this cheap, and the README would say so). Median in T-SQL via `PERCENTILE_CONT` 
 care to avoid a per-row window scan; if it fights back, computing median in C# over an
 already-aggregated weekly series is a fine fallback, since that set is small (locations ×
 weeks, at most ~200 rows).
+
+---
+---
+
+# Amendments
+
+Appended after the plan above was written and before implementation started. The body
+above is left as-written; where these amendments contradict it, the amendment wins.
+
+## Amendment 1 — 2026-08-13 18:22 (UTC-05:00): guard branches measured per location
+
+**Trigger.** The profiling in `analysis/` measured history and zero-days per *account*,
+but §2 defines `insufficient_history`, `baseline_zero`, `low_volume` and `mad_zero` per
+*location*. Those are different populations. Measured properly before writing tests, so
+I know which branches have real data behind them and which need synthetic fixtures.
+
+Measurement: `analysis/03_branch_coverage_by_location.py`. 69 (account, location) pairs
+with events, plus account 20 with none. Default window, and a sweep of all 18 anchor
+weeks whose full 8-week baseline sits inside the data range.
+
+| Branch | Default window | Any valid anchor | Test source |
+|---|---|---|---|
+| `insufficient_history` | 0 locations | **never fires** | synthetic fixture |
+| `baseline_zero` | 0 locations | **never fires** | synthetic fixture |
+| `low_volume` | 8 of 69 | 24 of 69 | real seed data |
+| `mad_zero` | 1 of 69 | 6 of 69 | real seed data |
+| account with no events | account 20 | — | real seed data |
+
+Minimum baseline median across all 69 locations is 3.5 and minimum history is 24 weeks,
+so the first two branches are unreachable from this dataset by construction. They still
+ship — a real Relay account onboarded last month hits both immediately — but their tests
+are honest unit fixtures, not integration tests dressed up as coverage.
+
+**Two findings that change the tests:**
+
+1. **The burst sits inside the default baseline window.** Account 6 / Site J:
+   `[4, 56, 11, 2, 3, 3, 5, 3]`, current 5. Median 3.5 → *+43%, above normal*.
+   Mean 10.9 → *-54%, collapse*. Seven of the eight `low_volume` locations are account 6
+   sites carrying a 46–72 week in an otherwise 2–6 baseline. So burst immunity is
+   demonstrable against **real seed rows on the default screen**, not only in a fixture.
+   That becomes the headline integration test.
+
+2. **§2 mis-describes `MAD = 0`.** It says "identical recent weeks". The real case is
+   account 12 / Site A: `[8, 8, 8, 8, 3, 6, 8, 14]` — median 8, MAD 0, with genuine
+   spread present. MAD collapses when a *majority* of weeks share a value, not when all
+   of them do. The fallback matters more than the original wording implied: without it
+   this location flags 3 and 14 as extreme anomalies.
+
+## Amendment 2 — 2026-08-13 18:22 (UTC-05:00): split the aggregation between SQL and C#
+
+**Trigger.** §4 and §5 contradict each other. §4 puts median and MAD in T-SQL via
+`PERCENTILE_CONT` inside a single query; §5 promises seven unit tests of a "baseline
+calculator" with no database. If the statistics live in SQL, that calculator does not
+exist and those tests cannot be written. Two further problems with the §4 approach:
+`PERCENTILE_CONT` in SQL Server is a window function with no `GROUP BY` aggregate form,
+and MAD is a median of deviations from a median, so it needs a second pass.
+
+**Decision — split the responsibility at the weekly-total boundary.**
+
+- **SQL aggregates down to weekly totals per `(location, week_start)`**, over the current
+  week plus the N baseline weeks, deduplicated, bucketed by account-local date, with
+  missing weeks materialised as zero rather than absent. That is a real aggregation over
+  ~12.6k rows against a calendar spine — it is the part that has to happen in the
+  database, and it stays there.
+- **C# computes median, MAD, the typical band and the status** over that result. At most
+  ~200 rows for the largest account (15 locations × 13 weeks).
+
+**Why this is better rather than merely easier:**
+
+- The seven unit tests in §5 become writable, and they are the tests that protect the
+  logic most likely to be wrong.
+- No `PERCENTILE_CONT`, no second pass for MAD, no window function fighting a `GROUP BY`.
+- The statistical policy — band width, thresholds, fallbacks — lives in one readable C#
+  class instead of being encoded in T-SQL, which is where the next person will look for
+  it and where it is cheapest to change.
+- Performance is not a real trade: the set crossing the boundary is ~200 rows. Pushing
+  the median into SQL would optimise a stage that is already negligible.
+
+**What does not change:** the endpoint contract, the aggregation still being genuine
+database work rather than pass-through, and the gap-filling staying in SQL where the
+calendar spine is.
