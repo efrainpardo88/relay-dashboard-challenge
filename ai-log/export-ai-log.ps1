@@ -25,7 +25,11 @@ param(
     [string]$OutDir = (Join-Path $PSScriptRoot 'raw'),
 
     # Tool results longer than this are truncated in the Markdown render.
-    [int]$MaxToolResultChars = 2000
+    [int]$MaxToolResultChars = 2000,
+
+    # Session ids to skip. Used for a side session that explored hosting/DB options
+    # and did not feed the implementation.
+    [string[]]$ExcludeSessions = @('c34afa98-acea-4977-88f8-e2930f791882')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -68,6 +72,11 @@ function Format-Block {
 
 Get-ChildItem -Path $SessionDir -Filter *.jsonl | ForEach-Object {
     $sessionFile = $_
+
+    if ($ExcludeSessions -contains $sessionFile.BaseName) {
+        Write-Host "Skipped  $($sessionFile.BaseName)  (excluded)"
+        return
+    }
 
     $lines = Get-Content -LiteralPath $sessionFile.FullName
 
