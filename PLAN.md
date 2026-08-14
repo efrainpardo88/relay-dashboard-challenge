@@ -342,3 +342,36 @@ and MAD is a median of deviations from a median, so it needs a second pass.
 **What does not change:** the endpoint contract, the aggregation still being genuine
 database work rather than pass-through, and the gap-filling staying in SQL where the
 calendar spine is.
+
+## Amendment 3 — 2026-08-13 18:52 (UTC-05:00): the IANA claim in §3, verified
+
+**Trigger.** §3 justifies precomputing `occurred_local_date` partly on the grounds that
+"SQL Server's `AT TIME ZONE` takes Windows zone ids, not IANA". That is true of SQL
+Server on Windows, which reads zones from the registry — but this project runs the
+**Linux** container, and it was a fair challenge that a Linux host might expose the
+system tz database and accept `America/Chicago` directly. An unverified justification in
+a public repo is worse than none, so I tested it instead of arguing it.
+
+**Verified** against `mcr.microsoft.com/mssql/server:2022-latest` — SQL Server 2022
+RTM-CU26 (16.0.4265.3) on Ubuntu 22.04. Script and raw output committed as
+`analysis/04_sqlserver_timezone_check.sql` / `.output.txt`.
+
+| Check | Result |
+|---|---|
+| `sys.time_zone_info` row count | 141 |
+| Naming convention of those rows | Windows ids only — `Central Standard Time`, `US Mountain Standard Time` |
+| `'America/Chicago'` present in `sys.time_zone_info` | no |
+| `AT TIME ZONE 'Central Standard Time'` | works → `2026-06-03 13:00:00 -05:00` |
+| `AT TIME ZONE 'America/Chicago'` | **fails** — "The time zone parameter … is invalid" |
+| `AT TIME ZONE 'America/Phoenix'` | **fails**, same error |
+
+The Linux container does **not** read zones from the operating system; SQL Server ships
+its own 141-zone catalogue under Windows naming on both platforms. So the constraint in
+§3 holds on the engine this project actually runs, and the claim is now measured rather
+than assumed.
+
+**Nothing about the decision changes** — and it would not have changed even if IANA had
+worked. Precomputing `occurred_local_date` was chosen for sargability and for keeping the
+conversion unit-testable in C# without a database; engine capability was a supporting
+reason, not the load-bearing one. Scope of the finding is exactly what was tested: this
+image and this version. It is not a claim about every SQL Server build.

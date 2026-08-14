@@ -1,0 +1,51 @@
+--- 1. engine / platform ---
+v
+-
+Microsoft SQL Server 2022 (RTM-CU26) (KB5093420) - 16.0.4265.3 (X64) 
+	Jul  7 2026 14:37:25 
+	Copyright (C) 2022 Microsoft Corporation
+	Developer Edition (64-bit) on Linux (Ubuntu 22.04.5 LTS) <X64>
+--- 2. how many zones, and what do the names look like? ---
+zone_count
+----------
+141
+name
+----
+Afghanistan Standard Time
+Alaskan Standard Time
+Aleutian Standard Time
+Altai Standard Time
+Arab Standard Time
+--- 3. is an IANA name present in sys.time_zone_info? ---
+name current_utc_offset is_currently_dst
+---- ------------------ ----------------
+US Mountain Standard Time -07:00 0
+Central Standard Time -05:00 1
+--- 4. AT TIME ZONE with a WINDOWS id ---
+windows_id_result
+-----------------
+2026-06-03 13:00:00.0000000 -05:00
+--- 5. AT TIME ZONE with an IANA id (the claim under test) ---
+iana_id_result
+--------------
+iana_id_result
+--------------
+FAILED: The time zone parameter 'America/Chicago' provided to AT TIME ZONE clause is invalid.
+--- 6. DST correctness: does it shift across the 2026-03-08 transition? ---
+winter_iana summer_iana
+----------- -----------
+dst_result
+----------
+FAILED: The time zone parameter 'America/Chicago' provided to AT TIME ZONE clause is invalid.
+--- 7. Phoenix (no DST) via IANA ---
+phoenix_winter phoenix_summer
+-------------- --------------
+phoenix_result
+--------------
+FAILED: The time zone parameter 'America/Phoenix' provided to AT TIME ZONE clause is invalid.
+--- 8. every IANA zone used by the seed accounts ---
+tz converted
+-- ---------
+all_zones_result
+----------------
+FAILED: The time zone parameter 'America/Chicago' provided to AT TIME ZONE clause is invalid.
