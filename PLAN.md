@@ -375,3 +375,49 @@ worked. Precomputing `occurred_local_date` was chosen for sargability and for ke
 conversion unit-testable in C# without a database; engine capability was a supporting
 reason, not the load-bearing one. Scope of the finding is exactly what was tested: this
 image and this version. It is not a claim about every SQL Server build.
+
+## Amendment 4 — 2026-08-13 19:47 (UTC-05:00): drop Dapper; SQL moves to its own file
+
+**Trigger.** §4 puts Dapper in the stack for the analytics read, with EF Core owning
+migrations and entities. Re-examined before writing any of it: the reason §4 wanted
+Dapper was "the pulse is a windowed aggregate with gap filling; expressing that through
+LINQ would be fighting the ORM". That reason is real, but it argues for **raw SQL**, not
+for Dapper specifically — and EF Core already runs raw SQL.
+
+**Decision — EF Core only.**
+
+- Migrations and entities: unchanged, EF Core as planned.
+- The pulse aggregate: `Database.SqlQueryRaw<T>(...)`, parameterised, projecting onto a
+  **flat DTO, not an entity**. EF Core 8 supports unmapped result types for exactly this,
+  the SQL is passed through verbatim, and results are not change-tracked.
+
+**Why dropping it is right rather than merely lighter:**
+
+- It buys nothing here. The concern §4 raised was LINQ mangling the aggregate;
+  `SqlQueryRaw` is hand-written SQL, so that concern is answered without a second
+  library. Dapper's advantage over EF is a thinner mapper — irrelevant when the result is
+  one flat DTO of primitives.
+- Two data-access stacks means two connection stories, two configuration points, two
+  transaction models and two things a reviewer has to hold in their head to run this. In
+  a 4–6 hour slice that is cost with no matching benefit.
+- One less package to justify in the README.
+
+**Separately: the aggregation SQL lives in its own `.sql` file, embedded as a resource** —
+not a C# string literal, verbatim or otherwise. Reasons, in order of how much they matter:
+
+1. It can be run **directly against the database** to verify the numbers, which is the
+   whole point given that correct aggregates are the thing being evaluated. A query
+   trapped inside a string literal can only be tested through the app.
+2. It diffs as SQL in a pull request instead of as a wall of escaped text.
+3. Syntax highlighting and formatting survive, so the query stays readable at the length
+   this one will reach.
+4. No interpolation is possible, which forces parameterisation rather than relying on
+   discipline.
+
+**Risks accepted.** `SqlQueryRaw<T>` for unmapped types needs EF Core 8+ (we are on 8), and
+it binds by **column name to property name** — a renamed column in the `.sql` silently
+produces a mapping failure rather than a compile error. Mitigation is the integration test
+asserting golden numbers: it fails immediately if the mapping breaks. Embedded resource
+names are also path-derived and easy to typo, so the loader resolves the resource once at
+startup and throws with the list of available names if it is missing, rather than failing
+later at first request.

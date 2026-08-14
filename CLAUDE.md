@@ -40,8 +40,10 @@ check it before overriding.
   fixtures — do not invent seed rows to reach them.
 
 ## Stack
-- EF Core owns migrations and the `accounts` read. The pulse aggregate is Dapper. Do not
-  "unify" it back into LINQ.
+- EF Core is the only data-access stack — no Dapper. The pulse aggregate runs through
+  `SqlQueryRaw<T>` onto a flat DTO, never an entity, and never as LINQ. (PLAN Amendment 4)
+- The aggregation SQL lives in its own `.sql` file embedded as a resource, never as a C#
+  string literal, so it can be run straight against the database to check the numbers.
 - All UI state — account, week, baseline window, event type — lives in URL query params. Not
   a service field, not `localStorage`. It must survive reload and be shareable by link.
 
