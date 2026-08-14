@@ -421,3 +421,64 @@ asserting golden numbers: it fails immediately if the mapping breaks. Embedded r
 names are also path-derived and easy to typo, so the loader resolves the resource once at
 startup and throws with the list of available names if it is missing, rather than failing
 later at first request.
+
+---
+---
+
+# Closing note — 2026-08-13 21:06 (UTC-05:00)
+
+Written at the end, kept separate from the plan and the amendments above so the record of
+what I intended stays distinct from the record of what happened.
+
+## Did the plan survive?
+
+The **product** half did, unchanged: one screen, last complete Mon–Sun week, account
+roll-up over a table of locations ranked by deviation, median-and-MAD baseline, whole-week
+comparison. Every guard in §2 shipped. Nothing in the interpretation moved once the seed was
+profiled.
+
+The **technical** half took four corrections, all of them before or during implementation
+and all recorded above rather than quietly applied:
+
+| | What changed | Caught by |
+|---|---|---|
+| A1 | Guard branches measured per location, not per account. Two of them have no real data behind them and needed synthetic fixtures | Me, reading §2 against the profiling |
+| A2 | Median/MAD moved out of T-SQL into C#, because §4 and §5 contradicted each other | Me, reading the plan against itself |
+| A3 | The IANA justification in §3 verified against the real engine instead of asserted | Me, challenging it; the test proved my challenge wrong |
+| A4 | Dapper dropped; the aggregation SQL became a runnable file | Me, before writing either |
+
+Three of the four are the plan disagreeing with itself or with reality. That is the useful
+thing a written plan does — a plan held only in your head cannot contradict itself in public.
+
+## Shipped against §7's drop list
+
+§7 said that under time pressure I would drop, in order: the event-type filter, then the
+baseline-window selector, then the account roll-up. **None of them were dropped.** All three
+shipped, along with things §7 never planned: week navigation, Swagger, a `nuget.config` so a
+clean clone restores from nuget.org, and committed screenshots.
+
+What §7 did not anticipate was where the time actually went — roughly 45 minutes on profiling
+before planning, and a 2.34 GB SQL Server image pull. Both paid for themselves: the profiling
+produced every golden number in the test suite, and the image pull is what let the IANA claim
+be verified rather than argued.
+
+## Where the plan's own test strategy fell short
+
+§5 described unit tests for the statistics and integration tests for the aggregates. Both
+were built and both did their job — five tests failed on first run because my fixture
+arithmetic was wrong, which is exactly the failure the approach exists to produce.
+
+But the worst bug in the submission was not caught by any of it. All three filter dropdowns
+displayed their first option regardless of the URL; the account picker read "Beacon Home
+Security" while the page showed Metro Collision Centers. Ten passing frontend tests did not
+notice, because they assert on component state and outbound requests — both of which were
+correct. It was found by screenshotting the running app.
+
+The lesson is narrow and worth keeping: a test suite that only asserts state and requests
+verifies that the app is *thinking* correctly, not that it is *showing* correctly. Looking at
+the running thing is not a formality after the tests pass. It is a different check.
+
+## Time
+
+**5h28**, against a 4–6h budget. Roughly: 1h15 on the brief, profiling and the plan; 2h on
+the backend; 45m on tests; 1h on the frontend; 30m on documentation.

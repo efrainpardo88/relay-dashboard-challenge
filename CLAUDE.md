@@ -46,6 +46,12 @@ check it before overriding.
   string literal, so it can be run straight against the database to check the numbers.
 - All UI state — account, week, baseline window, event type — lives in URL query params. Not
   a service field, not `localStorage`. It must survive reload and be shareable by link.
+- Mark a `<select>`'s choice with `[selected]` on the `<option>`, never `[value]` on the
+  select: the options come from `@for`, so the binding is applied before they exist and is
+  then silently lost, leaving every control showing its first entry.
+- Look at the running app before calling a UI change done. The suite asserts component state
+  and outbound requests, so a page that computes correctly and renders wrongly passes it —
+  that is exactly how the `[value]` bug above survived ten green tests.
 
 ## Out of scope
 - Auth, alerting/notifications, ML/forecasting, trend charts, per-event drill-down. Do not add
