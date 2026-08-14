@@ -1,0 +1,201 @@
+/* Plain but legible. The brief scores function over form, so this buys readability and
+   scannability and stops there — no design system, no component library. */
+
+:host {
+  display: block;
+  max-width: 66rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.masthead .sub {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--muted);
+}
+
+/* --- filters ------------------------------------------------------------------------ */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.filters select {
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.4rem 0.5rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.week-nav button {
+  font: inherit;
+  min-width: 2rem;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.week-nav button:hover { border-color: var(--text); }
+
+.week-nav .link {
+  border: none;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.week-label {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 9.5rem;
+  text-align: center;
+}
+
+/* --- cards -------------------------------------------------------------------------- */
+
+.card {
+  padding: 1.125rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.card h2 { margin: 0; font-size: 1.125rem; }
+.card h3 { margin: 0 0 0.875rem; font-size: 0.9375rem; color: var(--muted); font-weight: 600; }
+
+.rollup-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.tz { font-size: 0.8125rem; color: var(--muted); }
+
+.rollup-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+  align-items: center;
+  margin: 1rem 0 0.75rem;
+}
+
+.headline { display: flex; align-items: baseline; gap: 0.5rem; }
+.big { font-size: 2.5rem; font-weight: 650; line-height: 1; font-variant-numeric: tabular-nums; }
+.unit { color: var(--muted); font-size: 0.875rem; }
+
+.verdict { display: flex; align-items: center; gap: 0.6rem; }
+
+.context {
+  display: flex;
+  gap: 2rem;
+  margin: 0;
+  margin-left: auto;
+}
+
+.context dt { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.15rem; }
+.context dd { margin: 0; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+
+.footnote {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* --- table -------------------------------------------------------------------------- */
+
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+th, td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+tbody th { font-weight: 500; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
+
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.strong { font-weight: 650; }
+.range { color: var(--muted); white-space: nowrap; }
+
+/* A row that needs a decision gets a marker, not a full-row colour wash. */
+tr.attention th[scope='row'] { box-shadow: inset 3px 0 0 var(--accent); padding-left: 0.75rem; }
+
+/* --- status ------------------------------------------------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badge-normal { background: var(--ok-bg); color: var(--ok-fg); }
+.badge-above  { background: var(--up-bg); color: var(--up-fg); }
+.badge-below  { background: var(--down-bg); color: var(--down-fg); }
+
+/* Degraded states read as plain text: visible, but never dressed as a verdict. */
+.muted-verdict { font-size: 0.8125rem; color: var(--muted); font-style: italic; }
+
+.delta { font-weight: 600; font-variant-numeric: tabular-nums; }
+.delta-up { color: var(--up-fg); }
+.delta-down { color: var(--down-fg); }
+.delta-flat, .delta-none { color: var(--muted); }
+
+/* --- states ------------------------------------------------------------------------- */
+
+.notice { padding: 0.75rem 1rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
+.notice.error { border-color: var(--down-fg); color: var(--down-fg); }
+
+.empty { text-align: left; }
+.empty-headline { margin: 0.75rem 0 0.35rem; font-size: 1.25rem; font-weight: 600; }
+.muted { color: var(--muted); margin: 0; }

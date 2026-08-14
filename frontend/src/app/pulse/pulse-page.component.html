@@ -1,0 +1,163 @@
+<header class="masthead">
+  <h1>Weekly pulse</h1>
+  <p class="sub">Is this week normal for us — and which site needs attention?</p>
+</header>
+
+<section class="filters" aria-label="Filters">
+  <!-- Selection is marked on the option rather than bound on the select: the options are
+       rendered by @for, so a [value] on the select is applied before they exist and is
+       silently lost, leaving the control showing its first entry regardless of the URL. -->
+  <label>
+    <span>Account</span>
+    <select (change)="onAccountChange($any($event.target).value)">
+      @for (a of accounts(); track a.id) {
+        <option [value]="a.id" [selected]="a.id === filters().accountId">
+          {{ a.name }}{{ a.hasData ? '' : ' (no activity)' }}
+        </option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span>Compare against</span>
+    <select (change)="patch({ baselineWeeks: +$any($event.target).value })">
+      @for (w of baselineOptions; track w) {
+        <option [value]="w" [selected]="w === filters().baselineWeeks">previous {{ w }} weeks</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span>Activity</span>
+    <select (change)="patch({ eventType: $any($event.target).value })">
+      @for (t of eventTypeOptions; track t.value) {
+        <option [value]="t.value" [selected]="t.value === filters().eventType">{{ t.label }}</option>
+      }
+    </select>
+  </label>
+
+  @if (pulse(); as p) {
+    <div class="week-nav" role="group" aria-label="Week">
+      <button type="button" (click)="shiftWeek(-1)" title="Previous week">‹</button>
+      <span class="week-label">{{ formatDate(p.week.start) }} – {{ formatDate(p.week.end) }}</span>
+      <button type="button" (click)="shiftWeek(1)" title="Next week">›</button>
+      @if (filters().weekStart) {
+        <button type="button" class="link" (click)="resetWeek()">latest</button>
+      }
+    </div>
+  }
+</section>
+
+@if (loading()) {
+  <p class="notice">Loading…</p>
+}
+
+@if (error(); as message) {
+  <p class="notice error">{{ message }}</p>
+}
+
+@if (pulse(); as p) {
+  @if (isEmptyAccount()) {
+    <!-- A real account with zero recorded activity. Shown as an explicit state rather than
+         an empty table, a zero, or a percentage against nothing. -->
+    <section class="card empty">
+      <h2>{{ p.account.name }}</h2>
+      <p class="empty-headline">No activity recorded</p>
+      <p class="muted">
+        Nothing has been logged for this account, so there is nothing to compare the week of
+        {{ formatDate(p.week.start) }} – {{ formatDate(p.week.end) }} against.
+      </p>
+    </section>
+  } @else {
+    @if (p.total; as total) {
+
+    <section class="card rollup">
+      <div class="rollup-head">
+        <h2>{{ p.account.name }}</h2>
+        <span class="tz">{{ p.account.timezone }} · {{ p.account.locationCount }} site{{ p.account.locationCount === 1 ? '' : 's' }}</span>
+      </div>
+
+      <div class="rollup-body">
+        <div class="headline">
+          <span class="big">{{ total.current }}</span>
+          <span class="unit">events this week</span>
+        </div>
+
+        <div class="verdict">
+          @if (hasBadge(total.status)) {
+            <span class="badge" [class]="'badge-' + total.status">{{ statusLabel(total.status) }}</span>
+          } @else {
+            <span class="muted-verdict">{{ statusLabel(total.status) }}</span>
+          }
+          <span class="delta" [class]="deltaClass(total)">{{ deltaText(total) }}</span>
+        </div>
+
+        <dl class="context">
+          <div>
+            <dt>Typical for you</dt>
+            <dd>{{ total.baselineMedian | number:'1.0-1' }}</dd>
+          </div>
+          <div>
+            <dt>Normal range</dt>
+            <dd>{{ total.typicalLow | number:'1.0-0' }} – {{ total.typicalHigh | number:'1.0-0' }}</dd>
+          </div>
+          <div>
+            <dt>Baseline</dt>
+            <dd>{{ total.baselineWeeksUsed }} weeks to {{ formatDate(p.baseline.end) }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <p class="footnote">
+        “Typical” is the median of your own previous {{ total.baselineWeeksUsed }} weeks, so a
+        one-off spike does not redefine normal.
+        @if (p.dataQuality.duplicateEventsExcluded > 0) {
+          {{ p.dataQuality.duplicateEventsExcluded }} duplicate event{{ p.dataQuality.duplicateEventsExcluded === 1 ? '' : 's' }} excluded.
+        }
+      </p>
+    </section>
+
+    <section class="card">
+      <h3>Sites, most unusual first</h3>
+
+      @if (p.locations.length === 0) {
+        <p class="muted">No site recorded activity in this window.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Site</th>
+              <th scope="col" class="num">This week</th>
+              <th scope="col" class="num">Typical</th>
+              <th scope="col" class="num">Normal range</th>
+              <th scope="col" class="num">Change</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of p.locations; track row.location) {
+              <tr [class.attention]="row.metric.status === 'below' || row.metric.status === 'above'">
+                <th scope="row">{{ row.location }}</th>
+                <td class="num strong">{{ row.metric.current }}</td>
+                <td class="num">{{ row.metric.baselineMedian | number:'1.0-1' }}</td>
+                <td class="num range">
+                  {{ row.metric.typicalLow | number:'1.0-0' }} – {{ row.metric.typicalHigh | number:'1.0-0' }}
+                </td>
+                <td class="num" [class]="deltaClass(row.metric)">{{ deltaText(row.metric) }}</td>
+                <td>
+                  @if (hasBadge(row.metric.status)) {
+                    <span class="badge" [class]="'badge-' + row.metric.status">{{ statusLabel(row.metric.status) }}</span>
+                  } @else {
+                    <!-- Degraded states stay visible and unstyled-as-a-verdict on purpose. -->
+                    <span class="muted-verdict">{{ statusLabel(row.metric.status) }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+    }
+  }
+}
