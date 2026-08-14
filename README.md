@@ -20,6 +20,10 @@ cd frontend && npm install && npm start           # http://localhost:4200
 The API applies its migrations and loads `seed.sql` on first start — no separate seed step,
 and re-running is a no-op. First start takes a few seconds while 12,626 events load.
 
+These commands were run against a fresh clone into an empty directory, from a new empty
+database volume, with nothing else configured. No extra steps were needed. (Same machine,
+so the prerequisites above were already installed — that part is untested.)
+
 **Tests** — backend needs the database up:
 
 ```bash

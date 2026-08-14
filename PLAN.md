@@ -478,6 +478,26 @@ The lesson is narrow and worth keeping: a test suite that only asserts state and
 verifies that the app is *thinking* correctly, not that it is *showing* correctly. Looking at
 the running thing is not a formality after the tests pass. It is a different check.
 
+## Clean-clone check — 2026-08-13 21:35 (UTC-05:00)
+
+The README claims a reviewer can clone this and run it. Claiming that without testing it
+would have been the same mistake as asserting the IANA behaviour instead of measuring it, so
+the repository was cloned fresh into a separate directory and brought up from the README's
+commands alone.
+
+It worked end to end with **no changes and no undocumented steps**. `docker compose up`
+produced a new empty volume, so the first API start exercised the path that had only ever run
+once before — migrations applied from nothing, then `Seed Applied` loading all 12,626 events
+rather than the `Seed AlreadyApplied` no-op that every later start hits. The frontend
+installed and served. Nothing was missing from the repository, and nothing that mattered was
+sitting untracked in the original working directory.
+
+**Scope of that check, precisely:** it ran on the same machine, which already had the .NET
+SDK, Node and Docker. So it proves the *repository* is complete and self-contained — no
+missing file, no uncommitted config, no dependency on state left behind by the original
+working copy. It does not prove the toolchain prerequisites are correct on a machine that
+lacks them; the README lists those, and they are untested.
+
 ## Time
 
 **5h28**, against a 4–6h budget. Roughly: 1h15 on the brief, profiling and the plan; 2h on
